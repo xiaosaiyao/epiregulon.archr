@@ -1,0 +1,37 @@
+Package: epiregulon.archr
+Title: Companion package to epiregulon for usage with ArchR
+Version: 0.99.0
+Authors@R: 
+  c(person(given = "Xiaosai", family = "Yao", role = c("aut", "cre"), email = "yao.xiaosai@gene.com", comment = c(ORCID = "0000-0001-9729-0726")),
+    person(given = "Shang-Yang", family = "Chen", role = "aut", email = "sychen9584@gmail.com"))
+Description: Gene regulatory networks model the underlying gene regulation hierarchies that drive gene expression and observed phenotypes. Epiregulon infers TF activity in single cells by constructing a gene regulatory network (regulons). This is achieved through integration of scATAC-seq and scRNA-seq data and incorporation of public bulk TF ChIP-seq data. Links between regulatory elements and their target genes are established by computing correlations between chromatin accessibility and gene expressions.
+License: file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
+Imports:
+    epiregulon,
+    ArchR,
+    rhdf5,
+    GenomicRanges,
+    MultiAssayExperiment,
+    SummarizedExperiment,
+    BiocGenerics,
+    GenomeInfoDb,
+    IRanges,
+    S4Vectors,
+    checkmate,
+    methods,
+    scMultiome
+Depends: 
+    R (>= 4.2.0),
+    SingleCellExperiment
+Suggests: 
+    knitr,
+    rmarkdown,
+    parallel,
+    BiocStyle
+VignetteBuilder: knitr
+URL:
+biocViews: Software, NetworkInference, Epigenetics, SingleCell, GeneRegulation, Network
+Config/testthat/edition: 3
