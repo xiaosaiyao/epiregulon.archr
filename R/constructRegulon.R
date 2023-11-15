@@ -73,7 +73,7 @@ getTFMotifInfo <- function (genome = c("hg38", "hg19", "mm10"),
       message("annotating peaks with motifs")
       grl <- epiregulon:::annotateMotif(species, peaks, BS.genome, out = "positions")
       names(grl) <- lapply(strsplit(names(grl), split="_|\\."), "[", 3)
-      }
+    }
 
   }
 
@@ -88,6 +88,7 @@ getTFMotifInfo <- function (genome = c("hg38", "hg19", "mm10"),
 #' @param grl GRangeList object containing reference TF binding information. We recommend retrieving `grl` from `getTFMotifInfo` which
 #' contains TF occupancy data derived from public and ENCODE ChIP-seq peaks. Alternatively, if the users would like to provide a GRangeList
 #' of motif annotations. This can be derived using `motifmatchr::matchMotifs`. See details
+#' @param peakMatrix A matrix of scATAC-seq peak regions with peak ids as rows
 #' @param archR_project_path Path to an ArchR project that have performed LSI dimensionality reduction and scRNA-seq integration
 #'
 #' @return A data frame containing overlapping ids of scATAC-seq peak regions and reference TF binding regions
@@ -119,18 +120,44 @@ getTFMotifInfo <- function (genome = c("hg38", "hg19", "mm10"),
 #'
 #' @export
 #'
-
+#' @examples
+#' set.seed(1)
+#' # create a mock peak-to-gene matrix
+#' p2g <- data.frame(idxATAC = c(rep(1,5), rep(2,5)), Chrom = "chr1", idxRNA = 1:10,
+#' Gene = paste0("Gene_",1:10),Correlation = runif(10, 0,1))
+#'
+#' # create mock a GRanges list of TF binding sites
+#' grl <- GRangesList("TF1" = GRanges(seqnames = "chr1",
+#' ranges = IRanges(start = c(50,1050), width = 100)),
+#' "TF2" = GRanges(seqnames = "chr1",
+#' ranges = IRanges(start = c(1050), width = 100))
+#' )
+#'
+#' # create a mock singleCellExperiment object for peak matrix
+#' peak_gr <- GRanges(seqnames = "chr1",
+#'              ranges = IRanges(start = seq(from = 1, to = 10000, by = 1000),
+#'              width = 100))
+#' peak_counts <- matrix(sample(x = 0:4, size = 100*length(peak_gr), replace = TRUE),
+#' nrow = length(peak_gr), ncol = 100)
+#' peak_sce <- SingleCellExperiment(list(counts = peak_counts))
+#' rowRanges(peak_sce) <- peak_gr
+#' rownames(peak_sce) <- paste0("peak",1:10)
+#'
+#' # create overlaps between p2g matrix, TF binding sites and peak matrix
+#' overlap <- addTFMotifInfo(p2g, grl, peakMatrix = peak_sce)
+#' utils::head(overlap)
 #' @author Xiaosai Yao, Shang-yang Chen
 
 addTFMotifInfo <- function(p2g,
                            grl,
+                           peakMatrix = NULL,
                            archR_project_path = NULL){
 
   if (!is.null(archR_project_path)) {
     proj <- ArchR::loadArchRProject(path = archR_project_path, showLogo = FALSE)
     peakSet <- ArchR::getPeakSet(ArchRProj = proj)
   } else {
-    stop("provide valid archR project path")
+    peakSet <- rowRanges(peakMatrix)
   }
 
   message("Computing overlap...")

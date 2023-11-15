@@ -10,7 +10,6 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
 Imports:
-    epiregulon,
     ArchR,
     rhdf5,
     GenomicRanges,
@@ -22,15 +21,20 @@ Imports:
     S4Vectors,
     checkmate,
     methods,
-    scMultiome
+    bluster,
+    scran,
+    scMultiome,
+    Matrix
 Depends: 
     R (>= 4.2.0),
-    SingleCellExperiment
+    SingleCellExperiment,
+    epiregulon
 Suggests: 
     knitr,
     rmarkdown,
     parallel,
-    BiocStyle
+    BiocStyle,
+    scuttle
 VignetteBuilder: knitr
 URL:
 biocViews: Software, NetworkInference, Epigenetics, SingleCell, GeneRegulation, Network

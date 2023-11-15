@@ -304,11 +304,21 @@ ArchRMatrix2SCE <- function(rse,
       assay(rse, log_name) <- mat
     } else if (transform_method == "normalize_log"){
       mat <- assay(rse)
-      normalized <- epiregulon:::normalizeCols(mat = mat, scaleTo = 10000)
+      normalized <- normalizeCols(mat = mat, scaleTo = 10000)
       normalized@x <- log2(normalized@x+1)
       assay(rse, log_name) <- normalized
     }
   }
   rse
+}
+
+normalizeCols <- function(mat = NULL, scaleTo = NULL){
+  colSm <- Matrix::colSums(mat)
+  if(!is.null(scaleTo)){
+    mat@x <- scaleTo * mat@x / rep.int(colSm, Matrix::diff(mat@p))
+  }else{
+    mat@x <- mat@x / rep.int(colSm, Matrix::diff(mat@p))
+  }
+  return(mat)
 }
 
