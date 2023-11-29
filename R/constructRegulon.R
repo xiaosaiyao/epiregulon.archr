@@ -38,7 +38,7 @@ getTFMotifInfo <- function (genome = c("hg38", "hg19", "mm10"),
   genome <- match.arg(genome)
   source <- match.arg(source)
   mode <- match.arg(mode)
-
+  if (mode == "motif" && is.null(peaks)) stop("'peaks' should be provided if 'motif' mode is chosen")
   if (mode == "occupancy") {
     grl <- scMultiome::tfBinding(genome, source, metadata)
   } else if (mode == "motif") {
