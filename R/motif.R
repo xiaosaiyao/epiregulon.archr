@@ -60,24 +60,37 @@ addMotifScore <- function(regulon,
     # match motif_names and official gene symbols
 
     colnames(motifs) <- epiregulon:::matchNames(motif_names, regulon)
+    peaks.idx <- seq_len(nrow(motifs))
 
-
-
-  } else if (is.null(ArchProj) & !is.null(peaks)) {
+  } else if (is.null(ArchProj) & !is.null(peaks) & class(peaks)=="GRanges") {
+    if(length(peaks)==0) stop("No peaks provided.")
     message ("annotating peaks with motifs")
     BS.genome <- switch(genome,
-                      hg38 = "BSgenome.Hsapiens.UCSC.hg38",
-                      hg19 = "BSgenome.Hsapiens.UCSC.hg19",
-                      mm10 = "BSgenome.Mmusculus.UCSC.mm10")
+                        hg38 = "BSgenome.Hsapiens.UCSC.hg38",
+                        hg19 = "BSgenome.Hsapiens.UCSC.hg19",
+                        mm10 = "BSgenome.Mmusculus.UCSC.mm10")
 
-    peaks <- GenomeInfoDb::keepStandardChromosomes(peaks, pruning.mode = "coarse")
-    motifs <- epiregulon:::annotateMotif(species, peaks, BS.genome, pwms, ...)
+    peaks.pruned <- GenomeInfoDb::keepStandardChromosomes(peaks, pruning.mode = "coarse")
+    if(length(peaks.pruned)==0) {
+      warning("No peaks in standard chromosomes. NAs returned.")
+      regulon[,field_name] <- NA
+      return(regulon)
+    }
+    # peaks shoud by unique otherwise some idxAATAC values will be missing
+    # in peaks.idx object because match function always returns the first index
+    if(any(duplicated(peaks.pruned))) stop("Duplicated peaks provided.")
+
+    # store original peak indices to match them to regulon idxATAC
+    peaks.idx <- GenomicRanges::match(peaks.pruned, peaks)
+    peaks.pruned <- peaks.pruned[peaks.idx %in% regulon$idxATAC]
+    peaks.idx <- peaks.idx[peaks.idx %in% regulon$idxATAC]
+    motifs <- annotateMotif(species, peaks.pruned, BS.genome, pwms, ...)
     motifs <- assay(motifs,"motifMatches")
 
     # Convert motifs to gene names
     motif_names <- unlist(lapply(strsplit(colnames(motifs), split="_|\\."), "[", 3))
 
-    colnames(motifs) <- epiregulon:::matchNames(motif_names, regulon)
+    colnames(motifs) <- matchNames(motif_names, regulon)
 
   } else {
 
@@ -95,7 +108,7 @@ addMotifScore <- function(regulon,
   tfs_with_motif <- intersect(colnames(motifs), unique(regulon$tf))
 
   for (tf in tfs_with_motif){
-    regulon[which(regulon$tf ==tf), field_name] <- motifs[regulon$idxATAC[which(regulon$tf ==tf)],tf]
+    regulon[which(regulon$tf ==tf), field_name] <- motifs[match(regulon$idxATAC[which(regulon$tf ==tf)], peaks.idx),tf]
   }
 
   regulon[,field_name] <- as.numeric(regulon[,field_name])
