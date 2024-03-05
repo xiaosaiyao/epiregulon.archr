@@ -13,7 +13,7 @@ calculateP2G(
   useMatrix = "GeneIntegrationMatrix",
   maxDist = 250000,
   cor_cutoff = 0.5,
-  cellNum = 200,
+  cellNum = 100,
   exp_assay = "logcounts",
   peak_assay = "counts",
   gene_symbol = "name",

@@ -63,7 +63,7 @@ calculateP2G <- function(peakMatrix = NULL,
                          useMatrix = "GeneIntegrationMatrix",
                          maxDist = 250000,
                          cor_cutoff = 0.5,
-                         cellNum = 200,
+                         cellNum = 100,
                          exp_assay = "logcounts",
                          peak_assay = "counts",
                          gene_symbol = "name",
@@ -137,6 +137,7 @@ calculateP2G <- function(peakMatrix = NULL,
       stop("colData of expMatrix does not contain ", gene_symbol)
     }
 
+    if (cellNum > ncol(expMatrix)) stop("The value of 'cellNum' parameter cannot be greater than the total number of cells")
 
     # Package expression matrix and peak matrix into a single sce
     sce <- epiregulon:::combineSCE(expMatrix, exp_assay, peakMatrix, peak_assay, reducedDim, useDim)
@@ -145,11 +146,9 @@ calculateP2G <- function(peakMatrix = NULL,
 
     # K-means clustering
     kNum <- trunc(ncol(sce) / cellNum)
-    kclusters <- scran::clusterCells(sce,
-                                     use.dimred = useDim,
-                                     BLUSPARAM = bluster::KmeansParam
-                                     (centers = kNum, iter.max = 5000))
+    kclusters <- bluster::clusterRows(reducedDim, BLUSPARAM = bluster::KmeansParam(centers = kNum, iter.max = 5000))
     kclusters <- as.character(kclusters)
+    cluster_numb_warning <- length(unique(kclusters)) < 5
 
 
     # aggregate sce by k-means clusters
@@ -198,7 +197,7 @@ calculateP2G <- function(peakMatrix = NULL,
     o$old.idxATAC <- rowData(altExp(sce_grouped))[o[,2],"old.idxATAC"]
 
     #add metadata to o
-    o$Gene <-  rowData(sce_grouped)[o[,1],"name"]
+    o$Gene <- rowData(sce_grouped)[o[, 1], gene_symbol]
     o$chr <- as.character(seqnames(rowRanges(altExp(sce_grouped))[o[,2]]))
     o$start <- GenomicRanges::start(rowRanges(altExp(sce_grouped))[o[,2],])
     o$end <- GenomicRanges::end(rowRanges(altExp(sce_grouped))[o[,2],])
@@ -229,13 +228,27 @@ calculateP2G <- function(peakMatrix = NULL,
 
       for (cluster in unique_clusters) {
         clusters_idx <- colnames(cluster_composition)[cluster_composition[cluster,] >= 1/length(unique_clusters)]
-        o$Correlation[, cluster] <- mapply(stats::cor,
-                                           as.data.frame(t(expCorMatrix[,clusters_idx])),
-                                           as.data.frame(t(peakCorMatrix[,clusters_idx])))
+        if(length(clusters_idx)<5) cluster_numb_warning <- TRUE
+        if(length(clusters_idx)<3) o$Correlation[, cluster] <- NA
+        else {
+          o$Correlation[, cluster] <- mapply(stats::cor,
+                                             as.data.frame(t(expCorMatrix[,clusters_idx])),
+                                             as.data.frame(t(peakCorMatrix[,clusters_idx])))
+
+        }
+
       }
 
     }
 
+    if(cluster_numb_warning) {
+      suggested_numb <- sqrt(ncol(sce))
+      if(!is.null(clusters)) suggested_numb <- suggested_numb/length(unique_clusters)
+      if(round(suggested_numb)<10)
+        warning("The number of aggregated cells in user-specified cluster is low. Consider providing lesser number of clusters")
+      else
+        warning(sprintf("The number of aggregated cells in user-specified cluster is low. Consider dropping cells from small clusters or changing cellNum parameter to %d", round(suggested_numb)))
+    }
 
     p2g_merged <- o[, c("old.idxATAC", "chr","start","end", "old.idxRNA", "Gene", "Correlation", "distance")]
     colnames(p2g_merged) <- c("idxATAC", "chr", "start","end", "idxRNA", "target", "Correlation", "distance")
