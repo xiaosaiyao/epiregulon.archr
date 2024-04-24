@@ -11,15 +11,7 @@
 #' @param useDim String specifying the dimensional reduction representation in the ArchR project to use or the name of the reduced dimension matrix supplied by the user
 #' @param useMatrix String specifying which the name of the gene expression matrix in the ArchR project to use.
 #' It is often called the "GeneExpressionMatrix" for multiome and "GeneIntegrationMatrix" for unpaired data in ArchR project.
-#' @param cellNum An integer to specify the number of cells to include in each K-means cluster. Default is 200 cells.
-#' @param maxDist An integer to specify the base pair extension from transcription start start for overlap with peak regions
-#' @param exp_assay String indicating the name of the assay in expMatrix for gene expression
-#' @param peak_assay String indicating the name of the assay in peakMatrix for chromatin accessibility
-#' @param gene_symbol String indicating the column name in the rowData of expMatrix that corresponds to gene symbol
-#' @param clusters A vector corresponding to the cluster labels for calculation of correlations within each cluster. If left NULL, correlation is calculated across
-#' all clusters. See details for the use of clusters
-#' @param cor_method String indicating which correlation coefficient is to be computed. One of "pearson" (default), "kendall", or "spearman".
-#' @param ... other parameters to pass to addPeak2GeneLinks from ArchR package
+#' @param ... other parameters to pass to [ArchR::addPeak2GeneLinks] package or to [epiregulon::calculateP2G].
 #'
 #' @return A DataFrame of Peak to Gene correlation
 #' @details Cluster information is sometimes helpful to avoid the [Simpsons's paradox](https://en.wikipedia.org/wiki/Simpson%27s_paradox) in which baseline differences
@@ -61,14 +53,7 @@ calculateP2G <- function(peakMatrix = NULL,
                          ArchR_path = NULL,
                          useDim = "IterativeLSI",
                          useMatrix = "GeneIntegrationMatrix",
-                         maxDist = 250000,
                          cor_cutoff = 0.5,
-                         cellNum = 100,
-                         exp_assay = "logcounts",
-                         peak_assay = "counts",
-                         gene_symbol = "name",
-                         clusters = NULL,
-                         cor_method = c("pearson", "kendall", "spearman"),
                          ...) {
 
 
@@ -77,14 +62,10 @@ calculateP2G <- function(peakMatrix = NULL,
 
     writeLines("Using ArchR to compute peak to gene links...")
     suppressMessages(obj <- ArchR::loadArchRProject(ArchR_path))
-
-    obj <- ArchR::addPeak2GeneLinks(
-      ArchRProj = obj,
-      reducedDims = useDim,
-      useMatrix = useMatrix,
-      logFile = "x",
-      ...
-    )
+    additional_arguments <- list(...)[c(names(list(...)) %in% names(formals(ArchR::getPeak2GeneLinks)))]
+    obj <- do.call(ArchR::addPeak2GeneLinks, c(list(ArchRProj = obj, reducedDims = useDim,
+                                                       useMatrix = useMatrix, logFile = "x"),
+                                               additional_arguments))
 
     p2g <- ArchR::getPeak2GeneLinks(
       ArchRProj = obj,
@@ -110,153 +91,16 @@ calculateP2G <- function(peakMatrix = NULL,
     # Extract relevant columns
     p2g_merged <- p2g_merged[, c("idxATAC", "seqnames.y", "start.y","end.y", "idxRNA", "name", "Correlation", "distance")]
     colnames(p2g_merged) <- c("idxATAC", "chr", "start","end", "idxRNA", "target", "Correlation", "distance")
-
-
-
+    p2g_merged <- p2g_merged[order(p2g_merged$idxATAC, p2g_merged$idxRNA),,drop=FALSE]
+    return(p2g_merged)
 
   } else if (!is.null(peakMatrix) &
              !is.null(expMatrix) & !is.null(reducedDim)) {
-
-    writeLines("Using epiregulon to compute peak to gene links...")
-
-    cor_method <- match.arg(cor_method)
-
-    checkmate::assert_class(rowRanges(peakMatrix), "GRanges")
-
-    if (length(rowRanges(peakMatrix))== 0){
-      stop("peakMatrix should contain non-empty rowRanges")
-    }
-
-    checkmate::assert_class(rowRanges(expMatrix), "GRanges")
-
-    if (length(rowRanges(expMatrix))== 0){
-      stop("expMatrix should contain non-empty rowRanges")
-    }
-
-    if (! gene_symbol %in% colnames(rowData(expMatrix))) {
-      stop("colData of expMatrix does not contain ", gene_symbol)
-    }
-
-    if (cellNum > ncol(expMatrix)) stop("The value of 'cellNum' parameter cannot be greater than the total number of cells")
-
-    # Package expression matrix and peak matrix into a single sce
-    sce <- epiregulon:::combineSCE(expMatrix, exp_assay, peakMatrix, peak_assay, reducedDim, useDim)
-
-    message("performing k means clustering to form metacells")
-
-    # K-means clustering
-    kNum <- trunc(ncol(sce) / cellNum)
-    kclusters <- bluster::clusterRows(reducedDim, BLUSPARAM = bluster::KmeansParam(centers = kNum, iter.max = 5000))
-    kclusters <- as.character(kclusters)
-    cluster_numb_warning <- length(unique(kclusters)) < 5
-
-
-    # aggregate sce by k-means clusters
-    sce_grouped <- applySCE(sce,
-                            scuttle::aggregateAcrossCells,
-                            ids = kclusters,
-                            statistics = "mean")
-
-    # some sces have strand information in metadata that conflicts with genomic ranges
-    mcols(expMatrix)$strand <- NULL
-
-    # keep track of original ATAC and expression indices
-    rowData(sce_grouped)$old.idxRNA <- seq_len(nrow(sce_grouped))
-    rowData(altExp(sce_grouped))$old.idxATAC <- seq_len(nrow(altExp(sce_grouped)))
-
-    # remove genes and peaks that are equal to 0
-    sce_grouped <- sce_grouped[which(rowSums(assay(sce_grouped)) != 0),]
-    altExp(sce_grouped) <- altExp(sce_grouped)[which(rowSums(assay(altExp(sce_grouped), "counts")) != 0),]
-
-    # extract gene expression and peak matrix
-    expGroupMatrix <- assay(sce_grouped, "counts")
-    peakGroupMatrix <- assay(altExp(sce_grouped), "counts")
-
-
-    # get gene information
-    geneSet <- rowRanges(sce_grouped)
-    geneStart <- promoters(geneSet)
-
-    # get peak range information
-    peakSet <- rowRanges(altExp(sce_grouped))
-
-    # find overlap after resizing
-    o <- S4Vectors::DataFrame(findOverlaps(resize(geneStart, maxDist, "center"),
-                                           peakSet,
-                                           ignore.strand = TRUE))
-
-
-
-    #Get Distance from Fixed point A B
-    o$distance <- distance(geneStart[o[, 1]] , peakSet[o[, 2]])
-    colnames(o) <- c("RNA", "ATAC", "distance")
-
-
-    # add old idxRNA and idxATAC
-    o$old.idxRNA <- rowData(sce_grouped)[o[,1],"old.idxRNA"]
-    o$old.idxATAC <- rowData(altExp(sce_grouped))[o[,2],"old.idxATAC"]
-
-    #add metadata to o
-    o$Gene <- rowData(sce_grouped)[o[, 1], gene_symbol]
-    o$chr <- as.character(seqnames(rowRanges(altExp(sce_grouped))[o[,2]]))
-    o$start <- GenomicRanges::start(rowRanges(altExp(sce_grouped))[o[,2],])
-    o$end <- GenomicRanges::end(rowRanges(altExp(sce_grouped))[o[,2],])
-
-    # Calculate correlation
-    expCorMatrix <- expGroupMatrix[as.integer(o$RNA), ]
-    peakCorMatrix <- peakGroupMatrix[as.integer(o$ATAC), ]
-
-    writeLines("Computing correlation")
-
-    # if a cluster is named "all", replace it to distinguish from all cells
-    clusters <- epiregulon:::renameCluster(clusters)
-
-    unique_clusters <- sort(unique(clusters))
-
-    o$Correlation <- epiregulon:::initiateMatCluster(clusters, nrow = nrow(expCorMatrix))
-
-    o$Correlation[,"all"] <- mapply(stats::cor,
-                                    as.data.frame(t(expCorMatrix)),
-                                    as.data.frame(t(peakCorMatrix)),
-                                    MoreArgs = list(method = cor_method))
-
-    # compute correlation within each cluster
-    if (!is.null(clusters)) {
-      # composition of kcluster
-      cluster_composition <- table(clusters, kclusters)
-      cluster_composition <- sweep(cluster_composition, 2, STATS=colSums(cluster_composition), FUN="/")
-
-      for (cluster in unique_clusters) {
-        clusters_idx <- colnames(cluster_composition)[cluster_composition[cluster,] >= 1/length(unique_clusters)]
-        if(length(clusters_idx)<5) cluster_numb_warning <- TRUE
-        if(length(clusters_idx)<3) o$Correlation[, cluster] <- NA
-        else {
-          o$Correlation[, cluster] <- mapply(stats::cor,
-                                             as.data.frame(t(expCorMatrix[,clusters_idx])),
-                                             as.data.frame(t(peakCorMatrix[,clusters_idx])))
-
-        }
-
-      }
-
-    }
-
-    if(cluster_numb_warning) {
-      suggested_numb <- sqrt(ncol(sce))
-      if(!is.null(clusters)) suggested_numb <- suggested_numb/length(unique_clusters)
-      if(round(suggested_numb)<10)
-        warning("The number of aggregated cells in user-specified cluster is low. Consider providing lesser number of clusters")
-      else
-        warning(sprintf("The number of aggregated cells in user-specified cluster is low. Consider dropping cells from small clusters or changing cellNum parameter to %d", round(suggested_numb)))
-    }
-
-    p2g_merged <- o[, c("old.idxATAC", "chr","start","end", "old.idxRNA", "Gene", "Correlation", "distance")]
-    colnames(p2g_merged) <- c("idxATAC", "chr", "start","end", "idxRNA", "target", "Correlation", "distance")
-
-    correlation_max <- apply(p2g_merged$Correlation, 1, max, na.rm = TRUE)
-    p2g_merged <- p2g_merged[correlation_max > cor_cutoff,,drop=FALSE]
-
-
+    additional_arguments <- list(...)[c(names(list(...)) %in% names(formals(epiregulon::calculateP2G)))]
+    return(do.call(epiregulon::calculateP2G, c(list(peakMatrix = peakMatrix, expMatrix = expMatrix,
+                                                       reducedDim = reducedDim, useDim = useDim,
+                                                       cor_cutoff = cor_cutoff, BPPARAM = BiocParallel::SerialParam()),
+                                               additional_arguments)))
 
   } else {
     stop(
@@ -264,9 +108,5 @@ calculateP2G <- function(peakMatrix = NULL,
     )
 
   }
-  p2g_merged <- p2g_merged[order(p2g_merged$idxATAC, p2g_merged$idxRNA),,drop=FALSE]
-  return(p2g_merged)
 
 }
-
-

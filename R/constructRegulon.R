@@ -29,7 +29,7 @@
 #' @export
 #'
 getTFMotifInfo <- function (genome = c("hg38", "hg19", "mm10"),
-                            source = c("atlas", "cistrome"),
+                            source = c("atlas", "cistrome", "encode.sample", "atlas.sample","atlas.tissue"),
                             metadata = FALSE,
                             mode = c("occupancy","motif"),
                             archr_path = NULL,
@@ -38,11 +38,10 @@ getTFMotifInfo <- function (genome = c("hg38", "hg19", "mm10"),
   genome <- match.arg(genome)
   source <- match.arg(source)
   mode <- match.arg(mode)
-  if (mode == "motif" && is.null(peaks)) stop("'peaks' should be provided if 'motif' mode is chosen")
+  if (all(c(mode == "motif", is.null(peaks), is.null(archr_path)))) stop("'peaks' should be provided if 'motif' mode is chosen")
   if (mode == "occupancy") {
     grl <- scMultiome::tfBinding(genome, source, metadata)
   } else if (mode == "motif") {
-
     if (!is.null(archr_path)) {
       message("retrieving previously annotated motif from ArchR project")
       ArchProj <-

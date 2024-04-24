@@ -11,14 +11,7 @@ calculateP2G(
   ArchR_path = NULL,
   useDim = "IterativeLSI",
   useMatrix = "GeneIntegrationMatrix",
-  maxDist = 250000,
   cor_cutoff = 0.5,
-  cellNum = 100,
-  exp_assay = "logcounts",
-  peak_assay = "counts",
-  gene_symbol = "name",
-  clusters = NULL,
-  cor_method = c("pearson", "kendall", "spearman"),
   ...
 )
 }
@@ -38,25 +31,10 @@ the genes in the form of \code{GRanges}. \code{rowData} should contain a column 
 \item{useMatrix}{String specifying which the name of the gene expression matrix in the ArchR project to use.
 It is often called the "GeneExpressionMatrix" for multiome and "GeneIntegrationMatrix" for unpaired data in ArchR project.}
 
-\item{maxDist}{An integer to specify the base pair extension from transcription start start for overlap with peak regions}
-
 \item{cor_cutoff}{A numeric scalar to specify the correlation cutoff between ATAC-seq peaks and RNA-seq genes to assign peak to gene links.
 Default correlation cutoff is 0.5.}
 
-\item{cellNum}{An integer to specify the number of cells to include in each K-means cluster. Default is 200 cells.}
-
-\item{exp_assay}{String indicating the name of the assay in expMatrix for gene expression}
-
-\item{peak_assay}{String indicating the name of the assay in peakMatrix for chromatin accessibility}
-
-\item{gene_symbol}{String indicating the column name in the rowData of expMatrix that corresponds to gene symbol}
-
-\item{clusters}{A vector corresponding to the cluster labels for calculation of correlations within each cluster. If left NULL, correlation is calculated across
-all clusters. See details for the use of clusters}
-
-\item{cor_method}{String indicating which correlation coefficient is to be computed. One of "pearson" (default), "kendall", or "spearman".}
-
-\item{...}{other parameters to pass to addPeak2GeneLinks from ArchR package}
+\item{...}{other parameters to pass to \link[ArchR:addPeak2GeneLinks]{ArchR::addPeak2GeneLinks} package or to \link[epiregulon:calculateP2G]{epiregulon::calculateP2G}.}
 }
 \value{
 A DataFrame of Peak to Gene correlation
