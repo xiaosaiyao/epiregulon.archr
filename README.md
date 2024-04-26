@@ -14,6 +14,9 @@ if(!require(devtools)) install.packages("devtools")
 
 # install epiregulon.archr
 devtools::install_github(repo='xiaosaiyao/epiregulon.archr')
+
+# install epiregulon.extra (optional)
+devtools::install_github(repo='xiaosaiyao/epiregulon.extra)
 ```
 
 Example data included in the tutorial are available from [scMultiome](https://bioconductor.org/packages/release/data/experiment/html/scMultiome.html) 
