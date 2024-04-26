@@ -2,7 +2,7 @@
   
 Gene regulatory networks model the underlying gene regulation hierarchies that drive gene expression and cell states. The main function of the `epiregulon` package is to construct gene regulatory networks and infer transcription factor (TF) activity in single cells by integration of scATAC-seq and scRNA-seq data and incorporation of public bulk TF ChIP-seq data.
 
-`epiregulon.archr` is a package maintained as a continuation of the former version of `epiregulon` (before November 2023) with dependence on and compatibility with `ArchR` package. Its development parallels that of `epiregulon` but it also keeps possibility to use `ArchR` project on top o which extended versions of the `calculateP2G`, `addTFMotifInfo` and `addMotifScore` functions perform operations leading to the construction of the gene regulatory network model.
+`epiregulon.archr` is extended version of `epiregulon`. It is designed to allow for downstream analysis of the single cell data prepared with the `ArchR` package. In particular, gene expression, chromatin availability and transcription factor motif matches data retrieved from the `ArchR` project are utilized to construct model of the gene regulatory network. Building upon `epiregulon`, `epiregulon.archr` inherits all its features. Likewise, it is complemented by `epiregulon.extra`, which provides tools for data visualization and network analysis.  
 
 For full documentation, please refer to the epiregulon [book](https://xiaosaiyao.github.io/epiregulon.book/).
 

@@ -11,6 +11,15 @@
 #' @param useDim String specifying the dimensional reduction representation in the ArchR project to use or the name of the reduced dimension matrix supplied by the user
 #' @param useMatrix String specifying which the name of the gene expression matrix in the ArchR project to use.
 #' It is often called the "GeneExpressionMatrix" for multiome and "GeneIntegrationMatrix" for unpaired data in ArchR project.
+#' @param cellNum An integer to specify the number of cells to include in each K-means cluster. Default is 200 cells.
+#' @param maxDist An integer to specify the base pair extension from transcription start start for overlap with peak regions
+#' @param exp_assay String indicating the name of the assay in expMatrix for gene expression
+#' @param peak_assay String indicating the name of the assay in peakMatrix for chromatin accessibility
+#' @param gene_symbol String indicating the column name in the rowData of expMatrix that corresponds to gene symbol
+#' @param clusters A vector corresponding to the cluster labels for calculation of correlations within each cluster. If left NULL, correlation is calculated across
+#' all clusters. See details for the use of clusters
+#' @param cor_method String indicating which correlation coefficient is to be computed. One of "pearson" (default), "kendall", or "spearman".
+
 #' @param ... other parameters to pass to [ArchR::addPeak2GeneLinks] package or to [epiregulon::calculateP2G].
 #'
 #' @return A DataFrame of Peak to Gene correlation
@@ -54,6 +63,12 @@ calculateP2G <- function(peakMatrix = NULL,
                          useDim = "IterativeLSI",
                          useMatrix = "GeneIntegrationMatrix",
                          cor_cutoff = 0.5,
+                         cellNum = 100,
+                         exp_assay = "logcounts",
+                         peak_assay = "counts",
+                         gene_symbol = "name",
+                         clusters = NULL,
+                         cor_method = c("pearson", "kendall", "spearman"),
                          ...) {
 
 
@@ -99,7 +114,10 @@ calculateP2G <- function(peakMatrix = NULL,
     additional_arguments <- list(...)[c(names(list(...)) %in% names(formals(epiregulon::calculateP2G)))]
     return(do.call(epiregulon::calculateP2G, c(list(peakMatrix = peakMatrix, expMatrix = expMatrix,
                                                        reducedDim = reducedDim, useDim = useDim,
-                                                       cor_cutoff = cor_cutoff, BPPARAM = BiocParallel::SerialParam()),
+                                                       cor_cutoff = cor_cutoff, cellNum =cellNum,
+                                                    exp_assay = exp_assay, peak_assay = peak_assay,
+                                                    gene_symbol = gene_symbol, clusters = clusters,
+                                                    cor_method = cor_method, BPPARAM = BiocParallel::SerialParam()),
                                                additional_arguments)))
 
   } else {
