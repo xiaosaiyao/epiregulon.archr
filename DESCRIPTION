@@ -1,10 +1,6 @@
 Package: epiregulon.archr
 Title: Companion package to epiregulon for usage with ArchR
-<<<<<<< HEAD
-Version: 0.99.4
-=======
-Version: 0.99.2
->>>>>>> 5813636a5feeb1c58075b232d3c67c3f25fe8b71
+Version: 0.99.5
 Authors@R: 
   c(person(given = "Xiaosai", family = "Yao", role = c("aut", "cre"), email = "yao.xiaosai@gene.com", comment = c(ORCID = "0000-0001-9729-0726")),
     person(given = "Shang-Yang", family = "Chen", role = "aut", email = "sychen9584@gmail.com"))
