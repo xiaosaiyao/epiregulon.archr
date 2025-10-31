@@ -37,10 +37,8 @@ the genes in the form of \code{GRanges}. \code{rowData} should contain a column 
 \item{useMatrix}{String specifying which the name of the gene expression matrix in the ArchR project to use.
 It is often called the "GeneExpressionMatrix" for multiome and "GeneIntegrationMatrix" for unpaired data in ArchR project.}
 
-\item{cor_cutoff}{A numeric scalar to specify the correlation cutoff between ATAC-seq peaks and RNA-seq genes to assign peak to gene links.
-Default correlation cutoff is 0.5.}
-
-\item{cellNum}{An integer to specify the number of cells to include in each K-means cluster. Default is 200 cells.}
+\item{cellNum}{An integer to specify the number of cells to include in each K-means cluster. Default is 100 cells.
+It may also be an object of \code{CellNumSol} class returned by \code{epiregulon::optimizeMetacellNumber}.}
 
 \item{exp_assay}{String indicating the name of the assay in expMatrix for gene expression}
 
