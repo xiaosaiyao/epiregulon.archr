@@ -1,6 +1,6 @@
 Package: epiregulon.archr
 Title: Companion package to epiregulon for usage with ArchR
-Version: 0.99.6
+Version: 0.99.7
 Authors@R: 
   c(person(given = "Xiaosai", family = "Yao", role = c("aut", "cre"), email = "yao.xiaosai@gene.com", comment = c(ORCID = "0000-0001-9729-0726")),
   person(given = "Tomasz", family = "Włodarczyk", role = c("aut"), email = "tomwlo@gmail.com", comment = c(ORCID = "0000-0003-1554-9699")),
@@ -22,14 +22,13 @@ Imports:
     S4Vectors,
     checkmate,
     methods,
-    bluster,
-    scran,
     scMultiome,
-    Matrix
+    Matrix,
+    BiocParallel
 Depends: 
     R (>= 4.2.0),
     SingleCellExperiment,
-    epiregulon
+    epiregulon (>= 2.0.0)
 Suggests: 
     knitr,
     rmarkdown,
