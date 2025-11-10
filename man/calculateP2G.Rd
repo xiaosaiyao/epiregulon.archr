@@ -17,7 +17,7 @@ calculateP2G(
   peak_assay = "counts",
   gene_symbol = "name",
   clusters = NULL,
-  cor_method = c("pearson", "kendall", "spearman"),
+  cor_method = c("pearson", "spearman", "kendall"),
   ...
 )
 }
@@ -37,6 +37,9 @@ the genes in the form of \code{GRanges}. \code{rowData} should contain a column 
 \item{useMatrix}{String specifying which the name of the gene expression matrix in the ArchR project to use.
 It is often called the "GeneExpressionMatrix" for multiome and "GeneIntegrationMatrix" for unpaired data in ArchR project.}
 
+\item{cor_cutoff}{A numeric scalar to specify the correlation cutoff between ATAC-seq peaks and RNA-seq genes to assign peak to gene links.
+Default correlation cutoff is 0.5. Takes effect only of \code{cutoff_stat} is set to \code{Correlation}.}
+
 \item{cellNum}{An integer to specify the number of cells to include in each K-means cluster. Default is 100 cells.
 It may also be an object of \code{CellNumSol} class returned by \code{epiregulon::optimizeMetacellNumber}.}
 
@@ -52,8 +55,6 @@ all clusters. See details for the use of clusters}
 \item{cor_method}{String indicating which correlation coefficient is to be computed. One of "pearson" (default), "kendall", or "spearman".}
 
 \item{...}{other parameters to pass to \link[ArchR:addPeak2GeneLinks]{ArchR::addPeak2GeneLinks} package or to \link[epiregulon:calculateP2G]{epiregulon::calculateP2G}.}
-
-\item{maxDist}{An integer to specify the base pair extension from transcription start start for overlap with peak regions}
 }
 \value{
 A DataFrame of Peak to Gene correlation
@@ -88,6 +89,7 @@ rowRanges(peak_sce) <- peak_gr
 rownames(peak_sce) <- paste0("peak",1:10)
 # create a mock reducedDim matrix
 reducedDim_mat <- matrix(runif(ncol(gene_sce)*50, min = 0, max = 1), nrow = ncol(gene_sce), 50)
+rownames(reducedDim_mat) <- colnames(gene_sce)
 p2g <- calculateP2G(peakMatrix = peak_sce, expMatrix = gene_sce, reducedDim = reducedDim_mat,
                     cellNum = 20, clusters = gene_sce$Treatment)
 }
