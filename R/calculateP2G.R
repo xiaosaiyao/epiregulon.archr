@@ -13,6 +13,7 @@
 #'  Default correlation cutoff is 0.5. Takes effect only of `cutoff_stat` is set to `Correlation`.
 #' @param cellNum An integer to specify the number of cells to include in each K-means cluster. Default is 100 cells.
 #' It may also be an object of `CellNumSol` class returned by `epiregulon::optimizeMetacellNumber`.
+#' @param maxDist An integer to specify the base pair extension from transcription start start for overlap with peak regions
 #' @param exp_assay String indicating the name of the assay in expMatrix for gene expression
 #' @param peak_assay String indicating the name of the assay in peakMatrix for chromatin accessibility
 #' @param gene_symbol String indicating the column name in the rowData of expMatrix that corresponds to gene symbol
@@ -65,6 +66,7 @@ calculateP2G <- function(peakMatrix = NULL,
                          useMatrix = "GeneIntegrationMatrix",
                          cor_cutoff = 0.5,
                          cellNum = 100,
+                         maxDist = 2.5e5,
                          exp_assay = "logcounts",
                          peak_assay = "counts",
                          gene_symbol = "name",
@@ -125,12 +127,12 @@ calculateP2G <- function(peakMatrix = NULL,
     additional_arguments <- list(...)[c(names(list(...)) %in% setdiff(names(formals(epiregulon::calculateP2G)), "useDim"))]
 
     return(do.call(epiregulon::calculateP2G, c(list(peakMatrix = peakMatrix, expMatrix = expMatrix,
-                                                       reducedDim = reducedDim,
-                                                       cor_cutoff = cor_cutoff, cellNum = cellNum,
+                                                    reducedDim = reducedDim,
+                                                    cor_cutoff = cor_cutoff, cellNum = cellNum,
+                                                    maxDist=maxDist,
                                                     exp_assay = exp_assay, peak_assay = peak_assay,
                                                     gene_symbol = gene_symbol, clusters = clusters,
-                                                    cor_method = cor_method,
-                                                    BPPARAM = BiocParallel::SerialParam()),
+                                                    cor_method = cor_method),
                                                additional_arguments)))
 
   } else {

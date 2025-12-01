@@ -13,6 +13,7 @@ calculateP2G(
   useMatrix = "GeneIntegrationMatrix",
   cor_cutoff = 0.5,
   cellNum = 100,
+  maxDist = 250000,
   exp_assay = "logcounts",
   peak_assay = "counts",
   gene_symbol = "name",
@@ -42,6 +43,8 @@ Default correlation cutoff is 0.5. Takes effect only of \code{cutoff_stat} is se
 
 \item{cellNum}{An integer to specify the number of cells to include in each K-means cluster. Default is 100 cells.
 It may also be an object of \code{CellNumSol} class returned by \code{epiregulon::optimizeMetacellNumber}.}
+
+\item{maxDist}{An integer to specify the base pair extension from transcription start start for overlap with peak regions}
 
 \item{exp_assay}{String indicating the name of the assay in expMatrix for gene expression}
 
